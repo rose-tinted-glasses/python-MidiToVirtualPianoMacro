@@ -44,7 +44,7 @@ class MidiFile:
 	divisionType = -1
 	itr = 0
 	runningStatus = -1
-	tempo = 120
+	tempo = 0 # all or nothing
 	
 	midiRecord = open("midiRecord.txt","w")
 	midiSong = open("song.txt","w")
@@ -156,8 +156,20 @@ class MidiFile:
 		elif(type in [0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0C]):
 			self.log("\t",self.readText(length))
 		elif(type == 0x51):
+			# https://www.recordingblogs.com/wiki/midi-set-tempo-meta-message thank you
+
+			timeBytes = []
+			for i in range(self.itr, self.itr+3):
+				timeBytes.append(int(str(self.bytes[i])))
+			tempo = round(60000000/int(bytearray(timeBytes).hex(), 16))
+			# won't work without this line??
+			# why is it not working without this line??
 			self.tempo = round(self.getInt(3) * 0.00024)
-			self.log("\tNew tempo is",str(self.tempo))
+			if (self.deltaTime/self.division) > 0.0:
+				self.notes.append([(self.deltaTime/self.division)-0.0001,"tempo=" + str(tempo)])
+			else:
+				self.notes.append([(self.deltaTime/self.division),"tempo=" + str(tempo)])
+			self.log("\tNew tempo is", str(tempo))
 		else:
 			self.itr+= length
 		return True
@@ -272,19 +284,18 @@ print("Press letter of midi file to process")
 for i in range(len(midList)):
 	print(chr(97+i),":",midList[i])
 
-choice = input()
+choice = "a"
 print("Processing",midList[ord(choice)-97])
 
 
 
 midi = MidiFile(midList[ord(choice)-97])
-midi.midiSong.write("tempo= " + str(midi.tempo) + "\n")
 midi.notes.sort()
 
 #Combine seperate lines with equal timings
 i = 1
 while(i < len(midi.notes)):
-	if(midi.notes[i-1][0] == midi.notes[i][0]):
+	if(midi.notes[i-1][0] == midi.notes[i][0] and not "tempo" in midi.notes[i][1]):
 		midi.notes[i][1] += midi.notes[i-1][1]
 		midi.notes.remove(midi.notes[i-1])
 	else:
@@ -318,6 +329,3 @@ for l in midi.notes:
 	midi.midiSheet.write("%7s " % note)
 	if(noteCount % 8 == 0):
 		midi.midiSheet.write("\n")
-	
-			
-	
