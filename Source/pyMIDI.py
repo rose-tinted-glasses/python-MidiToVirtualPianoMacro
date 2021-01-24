@@ -284,7 +284,7 @@ print("Press letter of midi file to process")
 for i in range(len(midList)):
 	print(chr(97+i),":",midList[i])
 
-choice = "a"
+choice = input()
 print("Processing",midList[ord(choice)-97])
 
 
