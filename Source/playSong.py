@@ -1,4 +1,4 @@
-# to build, use "cd (playsong directory)"
+# to build for windows, use cmd.exe "cd (playsong directory)"
 # pyinstaller --onefile playSong.py
 
 import keyboard
