@@ -1,4 +1,4 @@
-# to build for windows, use cmd.exe "cd (playsong directory)"
+# to build, use "cd (playsong directory)"
 # pyinstaller --onefile playSong.py
 
 import keyboard
@@ -9,7 +9,7 @@ global isPlaying
 global infoTuple
 
 isPlaying = False
-storedIndex = -1
+storedIndex = 0
 conversionCases = {'!': '1', '@': '2', '£': '3', '$': '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'}
 
 def onDelPress(event):
@@ -49,7 +49,7 @@ def processFile():
 		lines = macro_file.read().split("\n")
 		tOffsetSet = False
 		tOffset = 0
-		tempo = 60/float(lines[0].split(" ")[1])
+		tempo = 60/float(lines[0].split("=")[1])
 		
 		processedNotes = []
 		
@@ -82,11 +82,19 @@ def parseInfo():
 	notes = infoTuple[2]
 	
 	# parse time between each note
-	for i in range(0, len(notes)):
-		if not i == len(notes)-1:
+	# while loop is required because we are editing the array as we go
+	i = 0
+	while i < len(notes)-2:
+		note = notes[i]
+		nextNote = notes[i+1]
+		if "tempo=" in note[1]:
+			tempo = 60/float(note[1].split("=")[1])
+			notes.pop(i)
 			note = notes[i]
 			nextNote = notes[i+1]
-			note[0] = (nextNote[0] - note[0]) * tempo
+
+		note[0] = (nextNote[0] - note[0]) * tempo
+		i += 1
 
 	# let's just hold the last note for 1 second because we have no data on it
 	notes[len(notes)-1][0] = 1.00
@@ -99,7 +107,6 @@ def playNextNote():
 
 	notes = infoTuple[2]
 	if isPlaying and storedIndex < len(infoTuple[2])-1:
-		storedIndex += 1
 		noteInfo = notes[storedIndex]
 		delay = floorToZero(noteInfo[0])
 
@@ -107,6 +114,7 @@ def playNextNote():
 			pressLetter(n, delay)
 
 		print("%10.2f %15s" % (delay,noteInfo[1]))
+		storedIndex += 1
 		threading.Timer(delay, playNextNote).start()
 	elif storedIndex >= len(infoTuple[2])-1:
 		isPlaying = False
